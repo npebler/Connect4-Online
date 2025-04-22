@@ -58,40 +58,67 @@ public class Server{
 			
 			ClientThread(Socket s, int count){
 				this.connection = s;
-				this.count = count;	
+				this.count = count;
+				try { // try to open the streams
+					out = new ObjectOutputStream(connection.getOutputStream());
+					in = new ObjectInputStream(connection.getInputStream());
+					connection.setTcpNoDelay(true);
+
+					System.out.println("Client #" + count + " connected.");
+				}
+				catch(Exception e) {
+					System.err.println("Client #" + count + " failed to connect.");
+				}
 			}
 			
-			public void updateClients(String message) {
-				//TODO implement
+			public void updateClients(Message message) {
+				for (ClientThread client : clients) {
+					try {
+						client.out.writeObject(message);
+						client.out.flush();
+					} catch (Exception e) {
+						System.err.println("Error sending message to client #" + client.count + ": " + e.getMessage());
+					}
+				}
 			}
 			
 			public void run(){
-					
 				try {
-					in = new ObjectInputStream(connection.getInputStream());
-					out = new ObjectOutputStream(connection.getOutputStream());
-					connection.setTcpNoDelay(true);	
-				}
-				catch(Exception e) {
-					System.out.println("Streams not open");
-				}
-				
-				updateClients("new client on server: client #"+count);
-					
-				 while(true) {
-					    try {
-					    	String data = in.readObject().toString();
-					    	System.out.println("client: " + count + " sent: " + data);
-					    	updateClients("client #"+count+" said: "+data);
-					    	
-					    	}
-					    catch(Exception e) {
-					    	System.err.println("OOOOPPs...Something wrong with the socket from client: " + count + "....closing down!");
-					    	updateClients("Client #"+count+" has left the server!");
-					    	clients.remove(this);
-					    	break;
-					    }
+					while (true) {
+						Message message = (Message) in.readObject();
+						System.out.println("Client #" + count + " sent: " + message);
+						updateClients(message);
 					}
+				} catch (Exception e) {
+					System.err.println("Client #" + count + " disconnected.");
+					clients.remove(this);
+				}
+		
+				// try {
+				// 	in = new ObjectInputStream(connection.getInputStream());
+				// 	out = new ObjectOutputStream(connection.getOutputStream());
+				// 	connection.setTcpNoDelay(true);	
+				// }
+				// catch(Exception e) {
+				// 	System.out.println("Streams not open");
+				// }
+				
+				// updateClients("new client on server: client #"+count);
+					
+				//  while(true) {
+				// 	    try {
+				// 	    	String data = in.readObject().toString();
+				// 	    	System.out.println("client: " + count + " sent: " + data);
+				// 	    	updateClients("client #"+count+" said: "+data);
+					    	
+				// 	    	}
+				// 	    catch(Exception e) {
+				// 	    	System.err.println("OOOOPPs...Something wrong with the socket from client: " + count + "....closing down!");
+				// 	    	updateClients("Client #"+count+" has left the server!");
+				// 	    	clients.remove(this);
+				// 	    	break;
+				// 	    }
+				// 	}
 				}//end of run
 			
 			
