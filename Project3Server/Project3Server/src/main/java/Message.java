@@ -9,11 +9,11 @@ public class Message implements Serializable {
     public Message(int i, boolean connect){
         if(connect) {
             type = MessageType.NEWUSER;
-            message = "User "+i+" has joined!";
+            message = "User " + i + " has joined!";
             recipient = i;
         } else {
             type = MessageType.DISCONNECT;
-            message = "User "+i+" has disconnected!";
+            message = "User " + i + " has disconnected!";
             recipient = i;
         }
     }
@@ -28,6 +28,12 @@ public class Message implements Serializable {
         type = MessageType.TEXT;
         message = mess;
         recipient = rec;
+    }
+
+    public Message(String mess, MessageType type) {
+        this.message = mess;
+        this.type = type;
+        this.recipient = -1;
     }
 }
 

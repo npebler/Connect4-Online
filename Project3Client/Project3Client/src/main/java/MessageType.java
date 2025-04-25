@@ -1,3 +1,3 @@
 public enum MessageType{
-    TEXT, NEWUSER, DISCONNECT;
+    TEXT, NEWUSER, DISCONNECT, LOGIN, CREATE_ACCOUNT;
 }
