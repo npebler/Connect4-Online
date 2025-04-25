@@ -5,7 +5,6 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -15,11 +14,9 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -31,6 +28,7 @@ public class GuiClient extends Application{
     private String username;
 	ComboBox<Integer> listUsers;
 	ListView<String> listItems;
+	private Label feedbackLabel;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -79,57 +77,8 @@ public class GuiClient extends Application{
 	// user will input their username and password to sign in
 	// or they can register for a new account
 	// accounts are stored in an array of strings in this format: username:password
+	// that eventually get stored in a file in the server
 	//
-    // private void loginScreen() {
-    //     VBox loginDisplay = new VBox(15);
-    //     loginDisplay.setAlignment(Pos.CENTER);
-    //     loginDisplay.setPadding(new Insets(30));
-    //     loginDisplay.setStyle("-fx-background-color: linear-gradient(to bottom right, #4e54c8, #8f94fb);");
-
-    //     Label title = new Label("Connect Four");
-    //     title.setFont(Font.font("Verdana", FontWeight.BOLD, 30));
-    //     title.setTextFill(Color.WHITE);
-    //     title.setEffect(new DropShadow());
-
-    //     TextField usernameField = new TextField();
-    //     usernameField.setPromptText("Username");
-    //     usernameField.setMaxWidth(220);
-
-    //     PasswordField passwordField = new PasswordField();
-    //     passwordField.setPromptText("Password");
-    //     passwordField.setMaxWidth(220);
-
-    //     Button loginButton = new Button("Login");
-    //     loginButton.setMaxWidth(220);
-    //     loginButton.setOnAction(e -> {
-    //         username = usernameField.getText();
-    //         String password = passwordField.getText();
-    //         if (!username.isEmpty() && !password.isEmpty()) {
-    //             clientConnection.send(new Message("LOGIN:" + username + ":" + password));
-    //             homeScreen(); // Transition to the home screen after login
-    //         }
-    //     });
-
-    //     Button createAccountButton = new Button("Create Account");
-    //     createAccountButton.setMaxWidth(220);
-    //     createAccountButton.setOnAction(e -> {
-    //         String username = usernameField.getText();
-    //         String password = passwordField.getText();
-    //         if (!username.isEmpty() && !password.isEmpty()) {
-    //             clientConnection.send(new Message("CREATE ACCOUNT:" + username + ":" + password));
-    //         }
-    //     });
-
-    //     loginDisplay.getChildren().addAll(title, usernameField, passwordField, loginButton, createAccountButton);
-
-    //     Scene loginScene = new Scene(loginDisplay, 400, 300);
-    //     primaryStage.setScene(loginScene);
-    //     primaryStage.setTitle("Connect Four - Login");
-    //     primaryStage.show();
-    // }
-
-
-
     private void loginScreen() {
         VBox loginDisplay = new VBox(15);
         loginDisplay.setAlignment(Pos.CENTER);
@@ -149,35 +98,43 @@ public class GuiClient extends Application{
         passwordField.setPromptText("Password");
         passwordField.setMaxWidth(220);
 
-        Label feedbackLabel = new Label();
-        feedbackLabel.setTextFill(Color.RED);
+		feedbackLabel = new Label();
+        feedbackLabel.setMaxWidth(220);
+        feedbackLabel.setWrapText(true);
+        feedbackLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
-        Button loginButton = new Button("Login");
+		Button loginButton = new Button("Login");
         loginButton.setMaxWidth(220);
         loginButton.setOnAction(e -> {
-			System.out.println("Login button clicked");
+            System.out.println("Login button clicked");
             username = usernameField.getText();
             String password = passwordField.getText();
             if (!username.isEmpty() && !password.isEmpty()) {
+                feedbackLabel.setText("Logging in...");
+                feedbackLabel.setTextFill(Color.BLUE);
                 clientConnection.send(new Message(username + ":" + password, MessageType.LOGIN));
             } else {
                 feedbackLabel.setText("Please enter both username and password.");
+                feedbackLabel.setTextFill(Color.RED);
             }
         });
 
-        Button createAccountButton = new Button("Create Account");
+		Button createAccountButton = new Button("Create Account");
         createAccountButton.setMaxWidth(220);
         createAccountButton.setOnAction(e -> {
-            String username = usernameField.getText();
+            username = usernameField.getText();
             String password = passwordField.getText();
             if (!username.isEmpty() && !password.isEmpty()) {
+                feedbackLabel.setText("Creating account...");
+                feedbackLabel.setTextFill(Color.BLUE);
                 clientConnection.send(new Message(username + ":" + password, MessageType.CREATE_ACCOUNT));
             } else {
                 feedbackLabel.setText("Please enter both username and password.");
+                feedbackLabel.setTextFill(Color.RED);
             }
         });
 
-        loginDisplay.getChildren().addAll(title, usernameField, passwordField, loginButton, createAccountButton, feedbackLabel);
+		loginDisplay.getChildren().addAll(title, usernameField, passwordField, loginButton, createAccountButton, feedbackLabel);
 
         Scene loginScene = new Scene(loginDisplay, 400, 300);
         primaryStage.setScene(loginScene);
@@ -193,16 +150,13 @@ public class GuiClient extends Application{
 	// helper method for the login screen
 	// deals with the login portion
 	//
-    private void loginHelper(Message data) {
+	private void loginHelper(Message data) {
         if ("Login successful".equals(data.message)) {
             System.out.println("Login successful!");
             homeScreen();
         } else if ("Login failed!".equals(data.message)) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Login Failed");
-            alert.setHeaderText(null);
-            alert.setContentText("Invalid username or password. Please try again.");
-            alert.showAndWait();
+            feedbackLabel.setText("Invalid username or password. Please try again.");
+            feedbackLabel.setTextFill(Color.RED);
         }
     }
 
@@ -213,20 +167,21 @@ public class GuiClient extends Application{
 	// helper method for the login screen
 	// deals with the register portion
 	//
-    private void registerHelper(Message data) {
+	private void registerHelper(Message data) {
         if ("Create account successful!".equals(data.message)) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Account Created");
-            alert.setHeaderText(null);
-            alert.setContentText("Your account has been created successfully!");
-            alert.showAndWait();
-            homeScreen();
+            feedbackLabel.setText("Account created successfully!");
+            feedbackLabel.setTextFill(Color.GREEN);
+                        new Thread(() -> {
+                try {
+                    Thread.sleep(1500); // 1.5 second delay
+                    Platform.runLater(() -> homeScreen());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
         } else if ("Create account failed! Account already exists.".equals(data.message)) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Account Creation Failed");
-            alert.setHeaderText(null);
-            alert.setContentText("An account with this username already exists.");
-            alert.showAndWait();
+            feedbackLabel.setText("An account with this username already exists.");
+            feedbackLabel.setTextFill(Color.RED);
         }
     }
 
