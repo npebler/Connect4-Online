@@ -400,13 +400,25 @@ public class GuiClient extends Application{
 		statsLabel.setFont(Font.font("Verdana", FontWeight.NORMAL, 16));
 		statsLabel.setTextFill(Color.WHITE);
 	
+		HBox buttonBox = new HBox(10); // Horizontal box for buttons
+		buttonBox.setAlignment(Pos.CENTER);
+	
 		Button returnButton = new Button("Return to Home");
 		returnButton.setOnAction(e -> {
 			System.out.println("Return to Home button clicked");
 			homeScreen();
 		});
 	
-		resultBox.getChildren().addAll(resultLabel, statsLabel, returnButton);
+		Button rematchButton = new Button("Rematch");
+		rematchButton.setOnAction(e -> {
+			System.out.println("Rematch button clicked");
+			clientConnection.send(new Message("PLAY", MessageType.TEXT)); // Notify the server to start a new game
+			waitingScreen(); // Transition to the waiting screen
+		});
+	
+		buttonBox.getChildren().addAll(returnButton, rematchButton);
+	
+		resultBox.getChildren().addAll(resultLabel, statsLabel, buttonBox);
 	
 		Scene resultScene = new Scene(resultBox, 400, 300);
 		primaryStage.setScene(resultScene);
