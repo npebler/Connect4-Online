@@ -5,6 +5,7 @@ public class Message implements Serializable {
     MessageType type;
     String message;
     int recipient;
+    String sender;
 
     public Message(int i, boolean connect){
         if(connect) {
@@ -35,5 +36,11 @@ public class Message implements Serializable {
         this.type = type;
         this.recipient = -1;
     }
-}
 
+    public Message(String message, MessageType type, String sender) {
+        this.message = message;
+        this.type = type;
+        this.recipient = -1;
+        this.sender = sender;
+    }
+}

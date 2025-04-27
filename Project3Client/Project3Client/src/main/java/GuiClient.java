@@ -60,9 +60,27 @@ public class GuiClient extends Application{
                    listItems.getItems().add(data.recipient + " has disconnected!");
                    break;
                 case TEXT:
-					// Only handle non-game related text messages
-					listItems.getItems().add(data.recipient + ": " + data.message);
-                   break;
+					   //  listItems.getItems().add(data.recipient + ": " + data.message);
+                   //  break;
+                       if (data.message.startsWith("PLAY") || data.message.startsWith("OPPONENT:") || data.message.startsWith("WAITING") || data.message.startsWith("COLOR:") || data.message.startsWith("UPDATE_STATS:") || data.message.startsWith("FORFEIT")) {
+                      // Handle game commands
+                      if (data.message.equals("Waiting for another player...")) {
+                            // Special case for waiting message
+                            listItems.getItems().add(data.message);
+                      }
+                   } else {
+                      // Regular chat message - use the sender field if available, otherwise use recipient ID
+                      String senderName;
+                      if (data.sender != null && !data.sender.isEmpty()) {
+                         senderName = data.sender;
+                      } else {
+                         senderName = data.recipient != -1 ? "User " + data.recipient : "Server";
+                      }
+                      listItems.getItems().add(senderName + ": " + data.message);
+                   }
+                    break;
+
+
                 case LOGIN:
                    loginHelper(data);
                    break;
@@ -174,23 +192,7 @@ public class GuiClient extends Application{
     // helper method for the login screen
     // deals with the login portion
     //
-    // private void loginHelper(Message data) {
-    //    if ("Login successful".equals(data.message)) {
-	// 	String[] parts = data.message.split(":");
-	// 	if (parts.length >= 6) { // parse the account info
-	// 		username = parts[1];
-	// 		wins = Integer.parseInt(parts[3]);
-	// 		losses = Integer.parseInt(parts[4]);
-	// 		draws = Integer.parseInt(parts[5]);
-	// 	}
-	// 	System.out.println("Login successful with stats - Wins: " + wins + ", Losses: " + losses + ", Draws: " + draws);
-	// 	homeScreen();
-    //    } else if ("Login failed!".equals(data.message)) {
-    //       feedbackLabel.setText("Invalid username or password. Please try again.");
-    //       feedbackLabel.setTextFill(Color.RED);
-    //    }
-    // }
-	private void loginHelper(Message data) {
+   private void loginHelper(Message data) {
 		if (data.message.startsWith("Login successful:")) {
 			String[] parts = data.message.split(":");
 			if (parts.length >= 5) { // Ensure the message contains username, password, wins, losses, draws
@@ -596,7 +598,6 @@ public class GuiClient extends Application{
 				if (checkWin(row, column, playerColor)) {
 					turnLabel.setText("You win!");
 					clientConnection.send(new Message("GAME_END:WIN", MessageType.GAME_END));
-					wins++;
 					gameEnded = true; // Set the game ended flag
 					return;
 				}
@@ -605,7 +606,6 @@ public class GuiClient extends Application{
 				if (checkDraw()) {
 					turnLabel.setText("Game is a draw!");
 					clientConnection.send(new Message("GAME_END:DRAW", MessageType.GAME_END));
-					draws++;
 					gameEnded = true; // Set the game ended flag
 					return;
 				}
@@ -662,11 +662,12 @@ public class GuiClient extends Application{
 	//
 	private void handleGameStart(Message data) {
 		// Parse opponent and turn information
-		// Example format: "OPPONENT:username:FIRST_TURN:true"
+		// Example format: "OPPONENT:username:FIRST_TURN:true/false:COLOR"
 		String[] parts = data.message.split(":");
-		if (parts.length >= 4) {
+		if (parts.length >= 5) {
 			opponent = parts[1];
 			turn = Boolean.parseBoolean(parts[3]);
+			playerColor = parts[4]; // Get the color assigned by the server
 			
 			// Initialize the game board
 			initializeBoard();
@@ -869,59 +870,31 @@ public class GuiClient extends Application{
 		gameEnded = false;  // Reset the game ended flag
 	}
 
-	private void handleGameEnd(Message data) {
-		// If the game has already ended, don't show another dialog
-		if (gameEnded) {
-			return;
-		}
-		
-		String[] parts = data.message.split(":");
-		if (parts.length == 2) {
-			String result = parts[1];
-			Platform.runLater(() -> {
-				// Set the game ended flag to prevent multiple dialogs
-				gameEnded = true;
-				
-				if (result.equals("WIN")) {
-					wins++;
-				} else if (result.equals("LOSE") || result.equals("FORFEIT")) {
-					losses++;
-				} else if (result.equals("DRAW")) {
-					draws++;
-				}
-				
-				// Show game result dialog
-				VBox resultBox = new VBox(10);
-				resultBox.setAlignment(Pos.CENTER);
-				resultBox.setPadding(new Insets(20));
-				
-				Label resultLabel = new Label();
-				if (result.equals("WIN")) {
-					resultLabel.setText("You won the game!");
-				} else if (result.equals("LOSE")) {
-					resultLabel.setText("You lost the game.");
-				} else if (result.equals("FORFEIT")) {
-					resultLabel.setText("Your opponent forfeited.");
-				} else {
-					resultLabel.setText("The game ended in a draw.");
-				}
-				
-				Button okButton = new Button("Return to Home");
-				okButton.setOnAction(e -> {
-					// Reset the game ended flag when returning to home
-					gameEnded = false;
-					homeScreen();
-				});
-				
-				resultBox.getChildren().addAll(resultLabel, okButton);
-				
-				Scene resultScene = new Scene(resultBox, 300, 200);
-				Stage resultStage = new Stage();
-				resultStage.setScene(resultScene);
-				resultStage.setTitle("Game Result");
-				resultStage.showAndWait();
-			});
-		}
-	}
+
+   private void handleGameEnd(Message data) {
+    // Extract the result from the message
+    String[] parts = data.message.split(":");
+    if (parts.length == 2) {
+        String result = parts[1];
+        
+        // Set the game ended flag to prevent multiple dialogs
+        gameEnded = true;
+        
+        // Update stats based on result
+        if (result.equals("WIN")) {
+            wins++;
+            endScreen("You won the game!");
+        } else if (result.equals("LOSE")) {
+            losses++;
+            endScreen("You lost the game.");
+        } else if (result.equals("FORFEIT")) {
+            wins++; // If opponent forfeits, you win
+            endScreen("Your opponent forfeited. You win!");
+        } else if (result.equals("DRAW")) {
+            draws++;
+            endScreen("The game ended in a draw.");
+        }
+    }
+}
 
 }
