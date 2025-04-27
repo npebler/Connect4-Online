@@ -220,14 +220,7 @@ public class GuiClient extends Application{
        if ("Create account successful!".equals(data.message)) {
           feedbackLabel.setText("Account created successfully!");
           feedbackLabel.setTextFill(Color.GREEN);
-          new Thread(() -> {
-             try {
-                Thread.sleep(1500); // 1.5 second delay
-                Platform.runLater(() -> homeScreen());
-             } catch (InterruptedException e) {
-                e.printStackTrace();
-             }
-          }).start();
+          homeScreen();
        } else if ("Create account failed! Account already exists.".equals(data.message)) {
           feedbackLabel.setText("An account with this username already exists.");
           feedbackLabel.setTextFill(Color.RED);
@@ -263,11 +256,6 @@ public class GuiClient extends Application{
 		clientConnection.send(new Message("PLAY", MessageType.TEXT));
 		waitingScreen();
 	});
-       Button playWithFriendButton = new Button("Play with Friend");
-       playWithFriendButton.setMaxWidth(220);
-       playWithFriendButton.setOnAction(e -> {
-          // Logic for playing with a friend
-       });
 
        VBox statsBox = new VBox(5);
        statsBox.setAlignment(Pos.CENTER);
@@ -287,34 +275,7 @@ public class GuiClient extends Application{
 
        statsBox.getChildren().addAll(statsTitle, winsLabel, lossesLabel, drawsLabel);
 
-       VBox colorBox = new VBox(10);
-       colorBox.setAlignment(Pos.CENTER);
-       colorBox.setPadding(new Insets(10));
-
-       Label colorLabel = new Label("Choose Your Color:");
-       colorLabel.setTextFill(Color.WHITE);
-
-       HBox colorOptions = new HBox(15);
-       colorOptions.setAlignment(Pos.CENTER);
-
-       Button redButton = new Button("Red");
-       redButton.setStyle("-fx-background-color: #e74c3c;");
-       redButton.setOnAction(e -> {
-          playerColor = "RED";
-          clientConnection.send(new Message("COLOR:RED", MessageType.TEXT));
-       });
-
-       Button yellowButton = new Button("Yellow");
-       yellowButton.setStyle("-fx-background-color: #f1c40f;");
-       yellowButton.setOnAction(e -> {
-          playerColor = "YELLOW";
-          clientConnection.send(new Message("COLOR:YELLOW", MessageType.TEXT));
-       });
-
-       colorOptions.getChildren().addAll(redButton, yellowButton);
-       colorBox.getChildren().addAll(colorLabel, colorOptions);
-
-       playOptions.getChildren().addAll(playButton, playWithFriendButton, statsBox, colorBox);
+       playOptions.getChildren().addAll(playButton, statsBox);
        homeDisplay.setCenter(playOptions);
 
        Scene homeScene = new Scene(homeDisplay, 800, 600);
