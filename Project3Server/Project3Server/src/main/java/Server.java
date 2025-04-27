@@ -110,11 +110,64 @@ public class Server{
 								String forfeiter = parts[1];
 								String opponent = parts[2];
 								handleForfeit(forfeiter, opponent);
+								// Don't broadcast the FORFEIT message
+								return;
 							} else {
 								System.err.println("Malformed FORFEIT message: " + message.message);
 							}
-												}
+						}
+					} else if (message.type == MessageType.GAME_MOVE) {
+						// Forward the game move to the opponent
+						// Format: MOVE:COLUMN
+						String[] moveParts = message.message.split(":");
+						if (moveParts.length == 2) {
+							// Find the opponent and forward the move
+							for (ClientThread client : clients) {
+								if (client != this && client.username != null) {
+									try {
+										client.out.writeObject(new Message("MOVE:" + moveParts[1], MessageType.GAME_MOVE));
+										client.out.flush();
+									} catch (Exception e) {
+										System.err.println("Error forwarding game move: " + e.getMessage());
+									}
+									break;
+								}
+							}
+						}
+						// Don't broadcast game moves to all clients
+						continue;
+					} else if (message.type == MessageType.GAME_END) {
+						// Handle game end
+						// Format: GAME_END:RESULT (WIN, LOSE, DRAW, FORFEIT)
+						String[] endParts = message.message.split(":");
+						if (endParts.length == 2) {
+							String result = endParts[1];
+							// Find the opponent and notify them
+							for (ClientThread client : clients) {
+								if (client != this && client.username != null) {
+									try {
+										// Send the opposite result to the opponent
+										String opponentResult;
+										if (result.equals("WIN")) {
+											opponentResult = "LOSE";
+										} else if (result.equals("LOSE")) {
+											opponentResult = "WIN";
+										} else {
+											opponentResult = result; // DRAW or FORFEIT
+										}
+										client.out.writeObject(new Message("GAME_END:" + opponentResult, MessageType.GAME_END));
+										client.out.flush();
+									} catch (Exception e) {
+										System.err.println("Error sending game end: " + e.getMessage());
+									}
+									break;
+								}
+							}
+						}
+						// Don't broadcast game end messages to all clients
+						continue;
 					}
+					// Only broadcast non-game messages to all clients
 					updateClients(message);
 				}
 			} catch (Exception e) {
@@ -189,6 +242,8 @@ public class Server{
 		
 				if (found && userStats != null) {
 					System.out.println("Login successful for: " + username);
+					// Set the username field of the ClientThread
+					this.username = username;
 					// Send back stats to client with login success
 					out.writeObject(new Message("Login successful:" + userStats, MessageType.LOGIN));
 				} else {
@@ -230,6 +285,8 @@ public class Server{
                     loginInformation.add(username + ":" + password + ":0:0:0"); // new account, 0 wins losses and draws
 					saveLoginInformation(); // save the new account to the file
 					System.out.println("Account created for: " + username);
+					// Set the username field of the ClientThread
+					this.username = username;
                     out.writeObject(new Message("Create account successful!", MessageType.CREATE_ACCOUNT));
                 }
                 out.flush();
@@ -289,12 +346,11 @@ public class Server{
 					ClientThread opponent = waitingPlayers.remove(0);
 					try {
 						// Notify both players to start the game
-						client.out.writeObject(new Message("START_GAME:RED:" + opponent.username, MessageType.TEXT));
+						// Format: OPPONENT:username:FIRST_TURN:true/false
+						client.out.writeObject(new Message("OPPONENT:" + opponent.username + ":FIRST_TURN:true", MessageType.GAME_START));
 						client.out.flush();
-						opponent.out.writeObject(new Message("START_GAME:YELLOW:" + client.username, MessageType.TEXT));
+						opponent.out.writeObject(new Message("OPPONENT:" + client.username + ":FIRST_TURN:false", MessageType.GAME_START));
 						opponent.out.flush();
-		
-						System.out.println("Matched " + client.username + " with " + opponent.username);
 					} catch (Exception e) {
 						System.err.println("Error starting game: " + e.getMessage());
 					}
@@ -312,10 +368,10 @@ public class Server{
 				// Notify both players
 				for (ClientThread client : clients) {
 					if (client.username.equals(forfeiter)) {
-						client.out.writeObject(new Message("You forfeited the game. You lose!", MessageType.TEXT));
+						client.out.writeObject(new Message("FORFEIT", MessageType.GAME_END));
 						client.out.flush();
 					} else if (client.username.equals(opponent)) {
-						client.out.writeObject(new Message("Your opponent forfeited. You win!", MessageType.TEXT));
+						client.out.writeObject(new Message("WIN", MessageType.GAME_END));
 						client.out.flush();
 					}
 				}
@@ -341,9 +397,9 @@ public class Server{
         public void run() {
             try {
                 // Notify both players to start the game
-                player1.out.writeObject(new Message("START_GAME:RED:" + player2.username, MessageType.TEXT));
+                player1.out.writeObject(new Message("START_GAME:RED:" + player2.username, MessageType.GAME_START));
                 player1.out.flush();
-                player2.out.writeObject(new Message("START_GAME:YELLOW:" + player1.username, MessageType.TEXT));
+                player2.out.writeObject(new Message("START_GAME:YELLOW:" + player1.username, MessageType.GAME_START));
                 player2.out.flush();
 
                 System.out.println("Game started between " + player1.username + " and " + player2.username);
@@ -408,18 +464,18 @@ public class Server{
 				String result = parts[1]; // WIN, LOSS, or DRAW
 		
 				if (result.equals("WIN")) {
-					winner.out.writeObject(new Message("You won!", MessageType.TEXT));
+					winner.out.writeObject(new Message("WIN", MessageType.GAME_END));
 					winner.out.flush();
-					loser.out.writeObject(new Message("You lost!", MessageType.TEXT));
+					loser.out.writeObject(new Message("LOSE", MessageType.GAME_END));
 					loser.out.flush();
 		
 					// Update stats
 					updateStats(winner.username, "WIN");
 					updateStats(loser.username, "LOSS");
 				} else if (result.equals("DRAW")) {
-					winner.out.writeObject(new Message("It's a draw!", MessageType.TEXT));
+					winner.out.writeObject(new Message("DRAW", MessageType.GAME_END));
 					winner.out.flush();
-					loser.out.writeObject(new Message("It's a draw!", MessageType.TEXT));
+					loser.out.writeObject(new Message("DRAW", MessageType.GAME_END));
 					loser.out.flush();
 		
 					// Update stats
