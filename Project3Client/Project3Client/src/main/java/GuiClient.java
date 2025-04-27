@@ -381,50 +381,50 @@ public class GuiClient extends Application{
 	//
 	// endScreen
 	//
-	// Screem that displays at the end of the game
+	// Screen that displays at the end of the game
 	// includes a rematch button and the chat
 	//
-	private void endScreen(String message) {
-		System.out.println("Transitioning to end screen with message: " + message);
-		
-		VBox resultBox = new VBox(20);
-		resultBox.setAlignment(Pos.CENTER);
-		resultBox.setPadding(new Insets(30));
-		resultBox.setStyle("-fx-background-color: linear-gradient(to bottom right, #4e54c8, #8f94fb);");
-	
-		Label resultLabel = new Label(message);
-		resultLabel.setFont(Font.font("Verdana", FontWeight.BOLD, 24));
-		resultLabel.setTextFill(Color.WHITE);
-	
-		Label statsLabel = new Label("Your stats: Wins: " + wins + ", Losses: " + losses + ", Draws: " + draws);
-		statsLabel.setFont(Font.font("Verdana", FontWeight.NORMAL, 16));
-		statsLabel.setTextFill(Color.WHITE);
-	
-		HBox buttonBox = new HBox(10); // Horizontal box for buttons
-		buttonBox.setAlignment(Pos.CENTER);
-	
-		Button returnButton = new Button("Return to Home");
-		returnButton.setOnAction(e -> {
-			System.out.println("Return to Home button clicked");
-			homeScreen();
-		});
-	
-		Button rematchButton = new Button("Rematch");
-		rematchButton.setOnAction(e -> {
-			System.out.println("Rematch button clicked");
-			clientConnection.send(new Message("PLAY", MessageType.TEXT)); // Notify the server to start a new game
-			waitingScreen(); // Transition to the waiting screen
-		});
-	
-		buttonBox.getChildren().addAll(returnButton, rematchButton);
-	
-		resultBox.getChildren().addAll(resultLabel, statsLabel, buttonBox);
-	
-		Scene resultScene = new Scene(resultBox, 400, 300);
-		primaryStage.setScene(resultScene);
-		
-		System.out.println("End screen displayed");
-	}
+   private void endScreen(String message) {
+      System.out.println("Transitioning to end screen with message: " + message);
+      
+      VBox resultBox = new VBox(20);
+      resultBox.setAlignment(Pos.CENTER);
+      resultBox.setPadding(new Insets(30));
+      resultBox.setStyle("-fx-background-color: linear-gradient(to bottom right, #4e54c8, #8f94fb);");
+
+      Label resultLabel = new Label(message);
+      resultLabel.setFont(Font.font("Verdana", FontWeight.BOLD, 24));
+      resultLabel.setTextFill(Color.WHITE);
+
+      Label statsLabel = new Label("Your stats: Wins: " + wins + ", Losses: " + losses + ", Draws: " + draws);
+      statsLabel.setFont(Font.font("Verdana", FontWeight.NORMAL, 16));
+      statsLabel.setTextFill(Color.WHITE);
+
+      HBox buttonBox = new HBox(10); // Horizontal box for buttons
+      buttonBox.setAlignment(Pos.CENTER);
+
+      Button returnButton = new Button("Return to Home");
+      returnButton.setOnAction(e -> {
+         System.out.println("Return to Home button clicked");
+         homeScreen();
+      });
+
+      Button rematchButton = new Button("Rematch");
+      rematchButton.setOnAction(e -> {
+         System.out.println("Rematch button clicked");
+         clientConnection.send(new Message("PLAY", MessageType.TEXT)); // Notify the server to start a new game
+         waitingScreen(); // Transition to the waiting screen
+      });
+
+      buttonBox.getChildren().addAll(returnButton, rematchButton);
+
+      resultBox.getChildren().addAll(resultLabel, statsLabel, buttonBox);
+
+      Scene resultScene = new Scene(resultBox, 400, 300);
+      primaryStage.setScene(resultScene);
+      
+      System.out.println("End screen displayed");
+   }
 
 
     //
